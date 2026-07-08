@@ -21,18 +21,14 @@ export default function WeeklyReports({ habits, history, activeMonth, activeYear
     );
   }
 
-  // Segment month into weeks
+  // Segment month into exactly 4 weeks (Week 4 absorbs remaining days)
   const getWeeksRange = () => {
-    const weeks = [
+    return [
       { id: 1, start: 1, end: 7 },
       { id: 2, start: 8, end: 14 },
       { id: 3, start: 15, end: 21 },
-      { id: 4, start: 22, end: 28 },
-      { id: 5, start: 29, end: daysInMonth }
+      { id: 4, start: 22, end: daysInMonth }
     ];
-    // If month has only 28 days (February), remove Week 5
-    if (daysInMonth <= 28) weeks.pop();
-    return weeks;
   };
 
   const weeks = getWeeksRange();

@@ -468,18 +468,16 @@ export default function Dashboard() {
 
   // Weekly structure boundaries
   const getWeeksHeaders = () => {
-    let headers = [];
-    let daysInWeek = 0;
-    let weekIndex = 1;
-    daysArr.forEach((day, idx) => {
-      daysInWeek++;
-      if (daysInWeek === 7 || idx === daysArr.length - 1) {
-        headers.push({ key: `w-${weekIndex}`, title: `Week ${weekIndex}`, span: daysInWeek });
-        daysInWeek = 0;
-        weekIndex++;
-      }
-    });
-    return headers;
+    const w1Span = 7;
+    const w2Span = 7;
+    const w3Span = 7;
+    const w4Span = daysInMonth - 21; // spans remaining days of the month (e.g. 7 to 10 days)
+    return [
+      { key: 'w-1', title: 'Week 1', span: w1Span },
+      { key: 'w-2', title: 'Week 2', span: w2Span },
+      { key: 'w-3', title: 'Week 3', span: w3Span },
+      { key: 'w-4', title: 'Week 4', span: w4Span }
+    ];
   };
 
   // Metrics card calculations
@@ -653,19 +651,16 @@ export default function Dashboard() {
                 
                 <div className="input-row">
                   <div className="input-group half">
-                    <label>Emoji</label>
-                    <select value={newHabitEmoji} onChange={(e) => setNewHabitEmoji(e.target.value)}>
-                      <option value="⚡">⚡ Energize</option>
-                      <option value="🧘">🧘 Meditate</option>
-                      <option value="🏋️">🏋️ Gym</option>
-                      <option value="📖">📖 Read</option>
-                      <option value="💻">💻 Code</option>
-                      <option value="🍎">🍎 Diet</option>
-                      <option value="🏃">🏃 Cardio</option>
-                      <option value="💰">💰 Save</option>
-                      <option value="🍷">🍷 Detox</option>
-                      <option value="🚿">🚿 Cold Shower</option>
-                    </select>
+                    <label>Emoji / Icon</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. ⚡"
+                      value={newHabitEmoji}
+                      onChange={(e) => setNewHabitEmoji(e.target.value.trim() || '⚡')}
+                      maxLength={2}
+                      style={{ textAlign: 'center', fontWeight: 'bold' }}
+                      required
+                    />
                   </div>
                   
                   <div className="input-group half">
@@ -677,6 +672,31 @@ export default function Dashboard() {
                       <option value="var(--rose-accent)">Rose</option>
                       <option value="var(--amber-accent)">Amber</option>
                     </select>
+                  </div>
+                </div>
+
+                <div style={{ margin: '4px 0 12px 0' }}>
+                  <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Quick Emoji Presets:</label>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {['⚡', '🧘', '🏋️', '📖', '💻', '🏃', '💰', '🍷', '🍎', '💤'].map(em => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setNewHabitEmoji(em)}
+                        style={{
+                          background: newHabitEmoji === em ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                          border: newHabitEmoji === em ? '1px solid var(--cyan-accent)' : '1px solid rgba(255,255,255,0.06)',
+                          borderRadius: '6px',
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          color: '#fff',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {em}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 
