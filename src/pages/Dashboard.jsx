@@ -117,7 +117,8 @@ export default function Dashboard() {
       if (habitsErr) throw habitsErr;
 
       // Seed default habits if user is fresh and has no database entries
-      if (!dbHabits || dbHabits.length === 0) {
+      const hasSeeded = localStorage.getItem('aethertrack_seeded_' + userId);
+      if ((!dbHabits || dbHabits.length === 0) && !hasSeeded) {
         const seeded = [];
         for (const defaultHabit of DEFAULT_HABITS) {
           const { data, error: insertErr } = await supabase
@@ -132,9 +133,10 @@ export default function Dashboard() {
           if (insertErr) throw insertErr;
           if (data && data[0]) seeded.push(data[0]);
         }
+        localStorage.setItem('aethertrack_seeded_' + userId, 'true');
         setHabits(seeded);
       } else {
-        setHabits(dbHabits);
+        setHabits(dbHabits || []);
       }
 
       // 2. Fetch history
@@ -360,6 +362,50 @@ export default function Dashboard() {
         setHistory(updatedHistory);
       } catch (err) {
         alert('Reset failed: ' + err.message);
+      }
+    }
+  };
+
+  const handleClearAllHabits = async () => {
+    const confirmWipe = window.confirm(
+      "Are you sure you want to WIPE all habits? This will delete all of your current habits and checkboxes so you can start fresh."
+    );
+    if (!confirmWipe) return;
+
+    if (isGuest) {
+      setHabits([]);
+      localStorage.setItem('aethertrack_local_habits', JSON.stringify([]));
+      setHistory({});
+      localStorage.setItem('aethertrack_local_history', JSON.stringify({}));
+      alert('Local workspace habit list wiped successfully!');
+    } else {
+      try {
+        setLoading(true);
+        // 1. Delete history logs in Database
+        const { error: histErr } = await supabase
+          .from('history')
+          .delete()
+          .eq('user_id', user.id);
+        if (histErr) throw histErr;
+
+        // 2. Delete all habits in Database
+        const { error: habErr } = await supabase
+          .from('habits')
+          .delete()
+          .eq('user_id', user.id);
+        if (habErr) throw habErr;
+
+        // 3. Mark as manually seeded/wiped to prevent default loading
+        localStorage.setItem('aethertrack_seeded_' + user.id, 'true');
+
+        // 4. Update states
+        setHabits([]);
+        setHistory({});
+        alert('Cloud workspace habit list wiped successfully!');
+      } catch (err) {
+        alert('Failed to clear habits: ' + err.message);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -660,6 +706,15 @@ export default function Dashboard() {
               <button onClick={handleResetActiveMonth} className="reset-danger-btn">
                 <RotateCcw size={14} />
                 Reset Active Month
+              </button>
+
+              <button 
+                onClick={handleClearAllHabits} 
+                className="reset-danger-btn"
+                style={{ background: 'rgba(244, 67, 54, 0.03)', borderColor: 'rgba(244, 67, 54, 0.15)', color: '#ff5252', marginTop: '10px' }}
+              >
+                <Trash2 size={14} />
+                Wipe Habit List (Start Fresh)
               </button>
             </div>
           </aside>
