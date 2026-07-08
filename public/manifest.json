@@ -1,0 +1,16 @@
+{
+  "short_name": "AetherTrack",
+  "name": "AetherTrack - 3D Habit Space",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#070913",
+  "theme_color": "#00e5ff",
+  "display": "standalone",
+  "orientation": "portrait"
+}
