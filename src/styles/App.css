@@ -1196,11 +1196,102 @@ input:checked + .slider:before {
   .app-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 16px;
+  }
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
   }
   .header-metrics {
     width: 100%;
     overflow-x: auto;
     padding-bottom: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Core layout padding reductions */
+  .app-container {
+    padding: 8px;
+    gap: 12px;
+  }
+  .app-header {
+    padding: 16px;
+    gap: 16px;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+  }
+  .brand-text h1 {
+    font-size: 1.35rem;
+  }
+  .brand-text p {
+    font-size: 0.68rem;
+  }
+  .header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+  .header-metrics {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .metric-card {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .user-profile-badge {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* Auth forms visual sizing updates */
+  .auth-card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+  .auth-header h2 {
+    font-size: 1.4rem;
+  }
+  
+  /* Main grid sections */
+  .grid-panel {
+    padding: 16px 12px;
+  }
+  .month-header-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .month-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  /* Settings form layout adjustment */
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .input-group.half {
+    width: 100%;
+  }
+
+  /* Sheet Tab Bar sizing adjustment */
+  .tabs-container {
+    border-radius: 16px;
+    padding: 4px;
+  }
+  .sheet-tab {
+    padding: 6px 12px;
+    font-size: 0.75rem;
   }
 }
 
