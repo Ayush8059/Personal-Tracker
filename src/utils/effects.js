@@ -57,7 +57,9 @@ export function startParticleBackground(canvas) {
   let timeAngle = 0;
   
   function project(x, y, z) {
-    const scale = focalLength / (focalLength + z);
+    const denom = focalLength + z;
+    if (denom <= 0) return { x: 0, y: 0, scale: 0 };
+    const scale = focalLength / denom;
     return {
       x: (x * scale) + (width / 2),
       y: (y * scale) + (height / 2),
@@ -138,6 +140,7 @@ export function startParticleBackground(canvas) {
       rotPoint = rotateX(rotPoint.x, rotPoint.y, rotPoint.z, camRotX);
       
       const projected = project(rotPoint.x, rotPoint.y, rotPoint.z);
+      if (projected.scale <= 0) continue;
       
       projectedParticles.push({
         x: projected.x,
@@ -152,7 +155,7 @@ export function startParticleBackground(canvas) {
     // Sort far to near
     projectedParticles.sort((a, b) => b.depth - a.depth);
 
-    for (let i = 0; i < numParticles; i++) {
+    for (let i = 0; i < projectedParticles.length; i++) {
       const p = projectedParticles[i];
       if (p.x < 0 || p.x > width || p.y < 0 || p.y > height) continue;
       
