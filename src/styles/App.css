@@ -1467,32 +1467,50 @@ input:checked + .slider:before {
   color: #12152b !important;
 }
 
-/* Drag-to-Scroll Calendar Styles & Rounded Pill Scrollbar */
-.spreadsheet-container {
+/* Drag-to-Scroll Calendar Styles & Rounded Pill Scrollbars */
+.spreadsheet-container, .spreadsheet-container * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
   cursor: grab;
-  user-select: none;
 }
-.spreadsheet-container.grabbing {
+.spreadsheet-container.grabbing, .spreadsheet-container.grabbing * {
   cursor: grabbing !important;
 }
 
-/* Custom rounded scrollbar */
-.spreadsheet-container::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+/* Global Custom Rounded Scrollbars matching reference graphic */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
-.spreadsheet-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+
+::-webkit-scrollbar-track {
+  background: rgba(7, 9, 19, 0.3);
   border-radius: 10px;
 }
-.spreadsheet-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 10px;
-  border: 1px solid transparent;
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(230, 235, 244, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-radius: 20px;
+  border: 2px solid transparent;
   background-clip: padding-box;
 }
-.spreadsheet-container::-webkit-scrollbar-thumb:hover {
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35) !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35) !important;
 }
 
 /* Habit Reorder Buttons */
@@ -1501,4 +1519,32 @@ input:checked + .slider:before {
 }
 .reorder-btn:not(:disabled):hover {
   color: var(--cyan-accent) !important;
+}
+
+/* Calendar section specific scrollbar - Always Visible */
+.spreadsheet-container {
+  overflow-x: scroll !important; /* Force scrollbar visibility */
+}
+
+.spreadsheet-container::-webkit-scrollbar {
+  height: 10px !important; /* highly visible height */
+  display: block !important;
+}
+
+.spreadsheet-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-radius: 10px;
+}
+
+[data-theme="light"] .spreadsheet-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.spreadsheet-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3) !important; /* brighter grey pill scrollbar */
+  border-radius: 10px;
+}
+
+[data-theme="light"] .spreadsheet-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25) !important;
 }

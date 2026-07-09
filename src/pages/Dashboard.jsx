@@ -8,7 +8,7 @@ import WeeklyReports from '../components/WeeklyReports';
 import { 
   LogOut, Plus, Trash2, RotateCcw, Bell, BellOff, 
   HelpCircle, BarChart3, AlertTriangle, ShieldCheck, Check,
-  Sun, Moon, CheckSquare, GripVertical
+  Sun, Moon, CheckSquare, GripVertical, Pencil, X
 } from 'lucide-react';
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -95,12 +95,18 @@ export default function Dashboard() {
     const handleMouseDown = (e) => {
       if (e.button !== 0) return;
       const target = e.target;
-      if (target.closest('button') || target.closest('.custom-checkbox') || target.closest('.reorder-btns')) return;
+      if (
+        target.closest('button') || 
+        target.closest('.custom-checkbox') || 
+        target.closest('.reorder-btns') ||
+        target.closest('.drag-handle')
+      ) return;
       
       isDown = true;
       el.classList.add('grabbing');
-      startX = e.pageX - el.offsetLeft;
+      startX = e.clientX;
       scrollLeft = el.scrollLeft;
+      e.preventDefault(); // Essential to disable native browser text selection/drag interference
     };
 
     const handleMouseLeave = () => {
@@ -116,7 +122,7 @@ export default function Dashboard() {
     const handleMouseMove = (e) => {
       if (!isDown) return;
       e.preventDefault();
-      const x = e.pageX - el.offsetLeft;
+      const x = e.clientX;
       const walk = (x - startX) * 1.5;
       el.scrollLeft = scrollLeft - walk;
     };
@@ -463,7 +469,8 @@ export default function Dashboard() {
   };
 
   const [draggedIdx, setDraggedIdx] = useState(null);
-  const [rowDraggableId, setRowDraggableId] = useState(null);
+  const [editingHabitId, setEditingHabitId] = useState(null);
+  const [editingHabitName, setEditingHabitName] = useState('');
 
   const handleRowDrop = async (targetIdx) => {
     if (draggedIdx === null || draggedIdx === targetIdx) return;
@@ -474,7 +481,6 @@ export default function Dashboard() {
 
     setHabits(updated);
     setDraggedIdx(null);
-    setRowDraggableId(null);
 
     if (isGuest) {
       localStorage.setItem('aethertrack_local_habits', JSON.stringify(updated));
@@ -491,6 +497,38 @@ export default function Dashboard() {
         }
       } catch (err) {
         console.error('Failed to sync drag reorder with database:', err);
+      }
+    }
+  };
+
+  const handleSaveRename = async (habitId) => {
+    const trimmed = editingHabitName.trim();
+    if (!trimmed) {
+      alert("Habit name cannot be empty.");
+      return;
+    }
+
+    const updated = habits.map(h => {
+      if (h.id === habitId) {
+        return { ...h, name: trimmed };
+      }
+      return h;
+    });
+
+    setHabits(updated);
+    setEditingHabitId(null);
+
+    if (isGuest) {
+      localStorage.setItem('aethertrack_local_habits', JSON.stringify(updated));
+    } else {
+      try {
+        const { error } = await supabase
+          .from('habits')
+          .update({ name: trimmed })
+          .eq('id', habitId);
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync rename with database:', err);
       }
     }
   };
@@ -702,20 +740,64 @@ export default function Dashboard() {
             <div className="panel-section">
               <h3>My Habits</h3>
               <div className="habits-list">
-                {habits.map(habit => (
-                  <div key={habit.id} className="habit-item-sidebar">
-                    <div className="habit-info-sidebar">
-                      <span className="habit-emoji-sidebar">{habit.emoji}</span>
-                      <span className="habit-name-sidebar">{habit.name}</span>
+                {habits.map(habit => {
+                  const isEditing = editingHabitId === habit.id;
+                  if (isEditing) {
+                    return (
+                      <div key={habit.id} className="habit-item-sidebar editing" style={{ display: 'flex', gap: '8px', padding: '6px 10px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          value={editingHabitName} 
+                          onChange={(e) => setEditingHabitName(e.target.value)}
+                          maxLength={25}
+                          style={{ padding: '6px 8px', fontSize: '0.8rem', flex: 1, height: '30px', margin: '0' }}
+                          required
+                        />
+                        <button 
+                          onClick={() => handleSaveRename(habit.id)} 
+                          className="delete-habit-btn" 
+                          title="Save Rename" 
+                          style={{ color: 'var(--green-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button 
+                          onClick={() => setEditingHabitId(null)} 
+                          className="delete-habit-btn" 
+                          title="Cancel" 
+                          style={{ color: 'var(--rose-accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={habit.id} className="habit-item-sidebar">
+                      <div className="habit-info-sidebar">
+                        <span className="habit-emoji-sidebar">{habit.emoji}</span>
+                        <span className="habit-name-sidebar">{habit.name}</span>
+                      </div>
+                      <div className="habit-actions-sidebar">
+                        <span className="legend-color" style={{ background: habit.color, boxShadow: `0 0 6px ${habit.color}` }}></span>
+                        <button 
+                          onClick={() => {
+                            setEditingHabitId(habit.id);
+                            setEditingHabitName(habit.name);
+                          }} 
+                          className="delete-habit-btn" 
+                          title="Rename Habit"
+                          style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }}
+                        >
+                          <Pencil size={11} />
+                        </button>
+                        <button onClick={() => handleDeleteHabit(habit.id)} className="delete-habit-btn" title="Delete Habit">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="habit-actions-sidebar">
-                      <span className="legend-color" style={{ background: habit.color, boxShadow: `0 0 6px ${habit.color}` }}></span>
-                      <button onClick={() => handleDeleteHabit(habit.id)} className="delete-habit-btn" title="Delete Habit">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -873,15 +955,9 @@ export default function Dashboard() {
                           habits.map((habit, idx) => (
                           <tr 
                             key={habit.id}
-                            draggable={rowDraggableId === habit.id}
-                            onDragStart={(e) => {
-                              setDraggedIdx(idx);
-                              e.dataTransfer.effectAllowed = 'move';
-                              e.currentTarget.style.opacity = '0.4';
-                            }}
                             onDragOver={(e) => {
                               e.preventDefault();
-                              e.currentTarget.style.background = 'rgba(0, 229, 255, 0.06)';
+                              e.currentTarget.style.background = 'rgba(0, 229, 255, 0.08)';
                             }}
                             onDragLeave={(e) => {
                               e.currentTarget.style.background = '';
@@ -890,20 +966,25 @@ export default function Dashboard() {
                               e.currentTarget.style.background = '';
                               handleRowDrop(idx);
                             }}
-                            onDragEnd={(e) => {
-                              e.currentTarget.style.opacity = '';
-                              setDraggedIdx(null);
-                              setRowDraggableId(null);
-                            }}
                             style={{ transition: 'background-color 0.15s, opacity 0.15s' }}
                           >
                             <td className="habit-name-col">
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
                                 <div 
                                   className="drag-handle" 
-                                  style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.3)', marginRight: '2px', padding: '2px' }}
-                                  onMouseEnter={() => setRowDraggableId(habit.id)}
-                                  onMouseLeave={() => setRowDraggableId(null)}
+                                  draggable={true}
+                                  onDragStart={(e) => {
+                                    setDraggedIdx(idx);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    const row = e.currentTarget.closest('tr');
+                                    if (row) setTimeout(() => { row.style.opacity = '0.35'; }, 0);
+                                  }}
+                                  onDragEnd={(e) => {
+                                    setDraggedIdx(null);
+                                    const row = e.currentTarget.closest('tr');
+                                    if (row) row.style.opacity = '';
+                                  }}
+                                  style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.4)', marginRight: '2px', padding: '2px' }}
                                   title="Drag handle to reorder"
                                 >
                                   <GripVertical size={13} className="reorder-btn" />
