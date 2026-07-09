@@ -737,7 +737,7 @@ export default function Dashboard() {
             <div className="panel-section">
               <h3>My Habits</h3>
               <div className="habits-list">
-                {habits.map(habit => {
+                {habits.map((habit, idx) => {
                   const isEditing = editingHabitId === habit.id;
                   if (isEditing) {
                     return (
@@ -770,8 +770,43 @@ export default function Dashboard() {
                     );
                   }
                   return (
-                    <div key={habit.id} className="habit-item-sidebar">
-                      <div className="habit-info-sidebar">
+                    <div 
+                      key={habit.id} 
+                      className="habit-item-sidebar"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (draggedIdx !== null && draggedIdx !== idx) {
+                          const updated = [...habits];
+                          const temp = updated[draggedIdx];
+                          updated[draggedIdx] = updated[idx];
+                          updated[idx] = temp;
+                          setHabits(updated);
+                          setDraggedIdx(idx);
+                        }
+                      }}
+                      style={{ transition: 'background-color 0.15s, opacity 0.15s' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div 
+                          className="drag-handle" 
+                          draggable={true}
+                          onDragStart={(e) => {
+                            setDraggedIdx(idx);
+                            e.dataTransfer.effectAllowed = 'move';
+                            const card = e.currentTarget.closest('.habit-item-sidebar');
+                            if (card) setTimeout(() => { card.style.opacity = '0.35'; }, 0);
+                          }}
+                          onDragEnd={(e) => {
+                            setDraggedIdx(null);
+                            const card = e.currentTarget.closest('.habit-item-sidebar');
+                            if (card) card.style.opacity = '';
+                            persistHabitOrder();
+                          }}
+                          style={{ width: '20px', height: '20px', marginRight: '2px' }}
+                          title="Drag handle to reorder"
+                        >
+                          <GripVertical size={12} className="reorder-btn" />
+                        </div>
                         <span className="habit-emoji-sidebar">{habit.emoji}</span>
                         <span className="habit-name-sidebar">{habit.name}</span>
                       </div>
