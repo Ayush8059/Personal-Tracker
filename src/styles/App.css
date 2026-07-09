@@ -1468,13 +1468,9 @@ input:checked + .slider:before {
 }
 
 /* Drag-to-Scroll Calendar Styles & Rounded Pill Scrollbars */
-.spreadsheet-container, .spreadsheet-container * {
+.spreadsheet-container {
   user-select: none !important;
   -webkit-user-select: none !important;
-  cursor: grab;
-}
-.spreadsheet-container.grabbing, .spreadsheet-container.grabbing * {
-  cursor: grabbing !important;
 }
 
 /* Global Custom Rounded Scrollbars matching reference graphic */
@@ -1525,7 +1521,7 @@ input:checked + .slider:before {
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.35) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: grab !important;
+  cursor: move !important; /* Professional 4-way arrow cursor, no hand icons */
 }
 
 .drag-handle:hover {
@@ -1535,7 +1531,6 @@ input:checked + .slider:before {
 }
 
 .drag-handle:active {
-  cursor: grabbing !important;
   transform: scale(0.95);
 }
 
