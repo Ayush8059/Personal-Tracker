@@ -503,6 +503,7 @@ label {
 }
 
 input[type="text"], select {
+  width: 100%;
   background: rgba(7, 9, 19, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
@@ -1466,13 +1467,32 @@ input:checked + .slider:before {
   color: #12152b !important;
 }
 
-/* Drag-to-Scroll Calendar Styles */
+/* Drag-to-Scroll Calendar Styles & Rounded Pill Scrollbar */
 .spreadsheet-container {
   cursor: grab;
   user-select: none;
 }
 .spreadsheet-container.grabbing {
   cursor: grabbing !important;
+}
+
+/* Custom rounded scrollbar */
+.spreadsheet-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.spreadsheet-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+.spreadsheet-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.spreadsheet-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* Habit Reorder Buttons */

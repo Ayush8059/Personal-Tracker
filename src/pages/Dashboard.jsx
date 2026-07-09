@@ -8,7 +8,7 @@ import WeeklyReports from '../components/WeeklyReports';
 import { 
   LogOut, Plus, Trash2, RotateCcw, Bell, BellOff, 
   HelpCircle, BarChart3, AlertTriangle, ShieldCheck, Check,
-  Sun, Moon, CheckSquare, ChevronUp, ChevronDown
+  Sun, Moon, CheckSquare, GripVertical
 } from 'lucide-react';
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -462,43 +462,35 @@ export default function Dashboard() {
     }
   };
 
-  const handleReorderHabit = async (index, direction) => {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= habits.length) return;
+  const [draggedIdx, setDraggedIdx] = useState(null);
+  const [rowDraggableId, setRowDraggableId] = useState(null);
+
+  const handleRowDrop = async (targetIdx) => {
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
 
     const updated = [...habits];
-    const temp = updated[index];
-    updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
+    const [draggedItem] = updated.splice(draggedIdx, 1);
+    updated.splice(targetIdx, 0, draggedItem);
 
     setHabits(updated);
+    setDraggedIdx(null);
+    setRowDraggableId(null);
 
     if (isGuest) {
       localStorage.setItem('aethertrack_local_habits', JSON.stringify(updated));
     } else {
       try {
-        const habitA = updated[index];
-        const habitB = updated[targetIndex];
-
-        // Swap created_at timestamps in database to persist ordering
-        const { error: errA } = await supabase
-          .from('habits')
-          .update({ created_at: habitB.created_at })
-          .eq('id', habitA.id);
-        if (errA) throw errA;
-
-        const { error: errB } = await supabase
-          .from('habits')
-          .update({ created_at: habitA.created_at })
-          .eq('id', habitB.id);
-        if (errB) throw errB;
-
-        // Sync local object values
-        const tempTime = habitA.created_at;
-        habitA.created_at = habitB.created_at;
-        habitB.created_at = tempTime;
+        const originalTimestamps = [...habits].map(h => h.created_at).sort();
+        for (let i = 0; i < updated.length; i++) {
+          const { error } = await supabase
+            .from('habits')
+            .update({ created_at: originalTimestamps[i] })
+            .eq('id', updated[i].id);
+          if (error) throw error;
+          updated[i].created_at = originalTimestamps[i];
+        }
       } catch (err) {
-        console.error('Failed to sync reorder with database:', err);
+        console.error('Failed to sync drag reorder with database:', err);
       }
     }
   };
@@ -879,51 +871,65 @@ export default function Dashboard() {
                           </tr>
                         ) : (
                           habits.map((habit, idx) => (
-                          <tr key={habit.id}>
+                          <tr 
+                            key={habit.id}
+                            draggable={rowDraggableId === habit.id}
+                            onDragStart={(e) => {
+                              setDraggedIdx(idx);
+                              e.dataTransfer.effectAllowed = 'move';
+                              e.currentTarget.style.opacity = '0.4';
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.style.background = 'rgba(0, 229, 255, 0.06)';
+                            }}
+                            onDragLeave={(e) => {
+                              e.currentTarget.style.background = '';
+                            }}
+                            onDrop={(e) => {
+                              e.currentTarget.style.background = '';
+                              handleRowDrop(idx);
+                            }}
+                            onDragEnd={(e) => {
+                              e.currentTarget.style.opacity = '';
+                              setDraggedIdx(null);
+                              setRowDraggableId(null);
+                            }}
+                            style={{ transition: 'background-color 0.15s, opacity 0.15s' }}
+                          >
                             <td className="habit-name-col">
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  <span style={{ fontSize: '1rem' }}>{habit.emoji}</span>
-                                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '120px' }}>{habit.name}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                <div 
+                                  className="drag-handle" 
+                                  style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.3)', marginRight: '2px', padding: '2px' }}
+                                  onMouseEnter={() => setRowDraggableId(habit.id)}
+                                  onMouseLeave={() => setRowDraggableId(null)}
+                                  title="Drag handle to reorder"
+                                >
+                                  <GripVertical size={13} className="reorder-btn" />
                                 </div>
-                                <div className="reorder-btns" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginLeft: '6px' }}>
-                                  <button 
-                                    onClick={() => handleReorderHabit(idx, -1)} 
-                                    disabled={idx === 0}
-                                    style={{ background: 'none', border: 'none', padding: '0', cursor: idx === 0 ? 'not-allowed' : 'pointer', color: idx === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '10px', width: '12px' }}
-                                    title="Move Up"
-                                    className="reorder-btn"
-                                  >
-                                    <ChevronUp size={11} />
-                                  </button>
-                                  <button 
-                                    onClick={() => handleReorderHabit(idx, 1)} 
-                                    disabled={idx === habits.length - 1}
-                                    style={{ background: 'none', border: 'none', padding: '0', cursor: idx === habits.length - 1 ? 'not-allowed' : 'pointer', color: idx === habits.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '10px', width: '12px' }}
-                                    title="Move Down"
-                                    className="reorder-btn"
-                                  >
-                                    <ChevronDown size={11} />
-                                  </button>
-                                </div>
+                                <span style={{ fontSize: '1rem', marginRight: '2px' }}>{habit.emoji}</span>
+                                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '120px' }}>{habit.name}</span>
                               </div>
                             </td>
-                              {daysArr.map(day => {
-                                const dateStr = `${activeYear}-${String(activeMonth + 1).padStart(2, '0')}-${String(day.dayNum).padStart(2, '0')}`;
-                                const isChecked = !!(history[dateStr] && history[dateStr][habit.id]);
-                                return (
-                                  <td key={day.dayNum}>
-                                    <div 
-                                      className={`custom-checkbox ${isChecked ? 'checked' : ''}`}
-                                      style={{ '--accent-glow': habit.color }}
-                                      onClick={(e) => handleCheckboxToggle(e, habit.id, day.dayNum)}
-                                    >
-                                      <Check />
-                                    </div>
-                                  </td>
-                                );
-                              })}
-                            </tr>
+                            {daysArr.map(day => {
+                              const dateStr = `${activeYear}-${String(activeMonth + 1).padStart(2, '0')}-${String(day.dayNum).padStart(2, '0')}`;
+                              const isChecked = !!(history[dateStr] && history[dateStr][habit.id]);
+                              return (
+                                <td key={day.dayNum}>
+                                  <div 
+                                    className={`custom-checkbox ${isChecked ? 'checked' : ''}`}
+                                    style={{ '--accent-glow': habit.color }}
+                                    onClick={(e) => handleCheckboxToggle(e, habit.id, day.dayNum)}
+                                    draggable={false}
+                                    onDragStart={(e) => e.preventDefault()}
+                                  >
+                                    <Check />
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
                           ))
                         )}
                       </tbody>
