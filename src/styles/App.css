@@ -1465,3 +1465,20 @@ input:checked + .slider:before {
 [data-theme="light"] .coaching-tip strong {
   color: #12152b !important;
 }
+
+/* Drag-to-Scroll Calendar Styles */
+.spreadsheet-container {
+  cursor: grab;
+  user-select: none;
+}
+.spreadsheet-container.grabbing {
+  cursor: grabbing !important;
+}
+
+/* Habit Reorder Buttons */
+.reorder-btn {
+  transition: color 0.15s ease;
+}
+.reorder-btn:not(:disabled):hover {
+  color: var(--cyan-accent) !important;
+}

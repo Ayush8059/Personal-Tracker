@@ -8,7 +8,7 @@ import WeeklyReports from '../components/WeeklyReports';
 import { 
   LogOut, Plus, Trash2, RotateCcw, Bell, BellOff, 
   HelpCircle, BarChart3, AlertTriangle, ShieldCheck, Check,
-  Sun, Moon, CheckSquare
+  Sun, Moon, CheckSquare, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -47,6 +47,7 @@ export default function Dashboard() {
   const headerRef = useRef(null);
   const sidebarRef = useRef(null);
   const gridRef = useRef(null);
+  const spreadsheetRef = useRef(null);
   const navigate = useNavigate();
 
   /* ==========================================================================
@@ -81,6 +82,57 @@ export default function Dashboard() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('aethertrack_theme', theme);
   }, [theme]);
+
+  // Drag-to-Scroll Calendar Grid
+  useEffect(() => {
+    const el = spreadsheetRef.current;
+    if (!el) return;
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const handleMouseDown = (e) => {
+      if (e.button !== 0) return;
+      const target = e.target;
+      if (target.closest('button') || target.closest('.custom-checkbox') || target.closest('.reorder-btns')) return;
+      
+      isDown = true;
+      el.classList.add('grabbing');
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+    };
+
+    const handleMouseLeave = () => {
+      isDown = false;
+      el.classList.remove('grabbing');
+    };
+
+    const handleMouseUp = () => {
+      isDown = false;
+      el.classList.remove('grabbing');
+    };
+
+    const handleMouseMove = (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      el.scrollLeft = scrollLeft - walk;
+    };
+
+    el.addEventListener('mousedown', handleMouseDown);
+    el.addEventListener('mouseleave', handleMouseLeave);
+    el.addEventListener('mouseup', handleMouseUp);
+    el.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      el.removeEventListener('mousedown', handleMouseDown);
+      el.removeEventListener('mouseleave', handleMouseLeave);
+      el.removeEventListener('mouseup', handleMouseUp);
+      el.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [loading, activeViewTab]);
 
   /* ==========================================================================
      DATA LOADERS (Local Storage vs Supabase)
@@ -406,6 +458,47 @@ export default function Dashboard() {
         alert('Failed to clear habits: ' + err.message);
       } finally {
         setLoading(false);
+      }
+    }
+  };
+
+  const handleReorderHabit = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= habits.length) return;
+
+    const updated = [...habits];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    setHabits(updated);
+
+    if (isGuest) {
+      localStorage.setItem('aethertrack_local_habits', JSON.stringify(updated));
+    } else {
+      try {
+        const habitA = updated[index];
+        const habitB = updated[targetIndex];
+
+        // Swap created_at timestamps in database to persist ordering
+        const { error: errA } = await supabase
+          .from('habits')
+          .update({ created_at: habitB.created_at })
+          .eq('id', habitA.id);
+        if (errA) throw errA;
+
+        const { error: errB } = await supabase
+          .from('habits')
+          .update({ created_at: habitA.created_at })
+          .eq('id', habitB.id);
+        if (errB) throw errB;
+
+        // Sync local object values
+        const tempTime = habitA.created_at;
+        habitA.created_at = habitB.created_at;
+        habitB.created_at = tempTime;
+      } catch (err) {
+        console.error('Failed to sync reorder with database:', err);
       }
     }
   };
@@ -760,7 +853,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="spreadsheet-container">
+                  <div className="spreadsheet-container" ref={spreadsheetRef}>
                     <table className="habit-spreadsheet">
                       <thead>
                         <tr>
@@ -785,11 +878,36 @@ export default function Dashboard() {
                             <td colSpan={daysInMonth + 1} style={{ padding: '30px', color: 'var(--text-muted)' }}>Create habits in the sidebar to populate grid.</td>
                           </tr>
                         ) : (
-                          habits.map(habit => (
-                            <tr key={habit.id}>
-                              <td className="habit-name-col">
-                                <span style={{ marginRight: '6px' }}>{habit.emoji}</span> {habit.name}
-                              </td>
+                          habits.map((habit, idx) => (
+                          <tr key={habit.id}>
+                            <td className="habit-name-col">
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '1rem' }}>{habit.emoji}</span>
+                                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '120px' }}>{habit.name}</span>
+                                </div>
+                                <div className="reorder-btns" style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginLeft: '6px' }}>
+                                  <button 
+                                    onClick={() => handleReorderHabit(idx, -1)} 
+                                    disabled={idx === 0}
+                                    style={{ background: 'none', border: 'none', padding: '0', cursor: idx === 0 ? 'not-allowed' : 'pointer', color: idx === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '10px', width: '12px' }}
+                                    title="Move Up"
+                                    className="reorder-btn"
+                                  >
+                                    <ChevronUp size={11} />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleReorderHabit(idx, 1)} 
+                                    disabled={idx === habits.length - 1}
+                                    style={{ background: 'none', border: 'none', padding: '0', cursor: idx === habits.length - 1 ? 'not-allowed' : 'pointer', color: idx === habits.length - 1 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '10px', width: '12px' }}
+                                    title="Move Down"
+                                    className="reorder-btn"
+                                  >
+                                    <ChevronDown size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
                               {daysArr.map(day => {
                                 const dateStr = `${activeYear}-${String(activeMonth + 1).padStart(2, '0')}-${String(day.dayNum).padStart(2, '0')}`;
                                 const isChecked = !!(history[dateStr] && history[dateStr][habit.id]);
