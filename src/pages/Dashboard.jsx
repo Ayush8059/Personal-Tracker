@@ -472,28 +472,25 @@ export default function Dashboard() {
   const [editingHabitId, setEditingHabitId] = useState(null);
   const [editingHabitName, setEditingHabitName] = useState('');
 
-  const handleRowDrop = async (targetIdx) => {
-    if (draggedIdx === null || draggedIdx === targetIdx) return;
+  const habitsRef = useRef(habits);
+  useEffect(() => {
+    habitsRef.current = habits;
+  }, [habits]);
 
-    const updated = [...habits];
-    const [draggedItem] = updated.splice(draggedIdx, 1);
-    updated.splice(targetIdx, 0, draggedItem);
-
-    setHabits(updated);
-    setDraggedIdx(null);
-
+  const persistHabitOrder = async () => {
+    const finalHabits = habitsRef.current;
     if (isGuest) {
-      localStorage.setItem('aethertrack_local_habits', JSON.stringify(updated));
+      localStorage.setItem('aethertrack_local_habits', JSON.stringify(finalHabits));
     } else {
       try {
-        const originalTimestamps = [...habits].map(h => h.created_at).sort();
-        for (let i = 0; i < updated.length; i++) {
+        const originalTimestamps = [...finalHabits].map(h => h.created_at).sort();
+        for (let i = 0; i < finalHabits.length; i++) {
           const { error } = await supabase
             .from('habits')
             .update({ created_at: originalTimestamps[i] })
-            .eq('id', updated[i].id);
+            .eq('id', finalHabits[i].id);
           if (error) throw error;
-          updated[i].created_at = originalTimestamps[i];
+          finalHabits[i].created_at = originalTimestamps[i];
         }
       } catch (err) {
         console.error('Failed to sync drag reorder with database:', err);
@@ -955,16 +952,17 @@ export default function Dashboard() {
                           habits.map((habit, idx) => (
                           <tr 
                             key={habit.id}
+                            id={`habit-row-${habit.id}`}
                             onDragOver={(e) => {
                               e.preventDefault();
-                              e.currentTarget.style.background = 'rgba(0, 229, 255, 0.08)';
-                            }}
-                            onDragLeave={(e) => {
-                              e.currentTarget.style.background = '';
-                            }}
-                            onDrop={(e) => {
-                              e.currentTarget.style.background = '';
-                              handleRowDrop(idx);
+                              if (draggedIdx !== null && draggedIdx !== idx) {
+                                const updated = [...habits];
+                                const temp = updated[draggedIdx];
+                                updated[draggedIdx] = updated[idx];
+                                updated[idx] = temp;
+                                setHabits(updated);
+                                setDraggedIdx(idx);
+                              }
                             }}
                             style={{ transition: 'background-color 0.15s, opacity 0.15s' }}
                           >
@@ -983,8 +981,8 @@ export default function Dashboard() {
                                     setDraggedIdx(null);
                                     const row = e.currentTarget.closest('tr');
                                     if (row) row.style.opacity = '';
+                                    persistHabitOrder();
                                   }}
-                                  style={{ cursor: 'grab', display: 'flex', alignItems: 'center', color: 'rgba(255,255,255,0.4)', marginRight: '2px', padding: '2px' }}
                                   title="Drag handle to reorder"
                                 >
                                   <GripVertical size={13} className="reorder-btn" />

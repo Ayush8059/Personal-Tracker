@@ -1513,7 +1513,32 @@ input:checked + .slider:before {
   background: rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Habit Reorder Buttons */
+/* Habit Reorder Buttons & Tactile Drag Handles */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab !important;
+}
+
+.drag-handle:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--cyan-accent) !important;
+  border-color: rgba(0, 229, 255, 0.2) !important;
+}
+
+.drag-handle:active {
+  cursor: grabbing !important;
+  transform: scale(0.95);
+}
+
 .reorder-btn {
   transition: color 0.15s ease;
 }
